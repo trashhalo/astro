@@ -1,25 +1,32 @@
 import type { FunctionalComponent } from 'preact';
 import { h, Fragment } from 'preact';
+import 'preact/debug';
 import { useState, useEffect, useRef, StateUpdater } from 'preact/hooks';
 
 // provided by https://www.emgoto.com/react-table-of-contents/
-const useIntersectionObserver = (setActiveHeadings: StateUpdater<string[]>) => {
+const useIntersectionObserver = (query: string) => {
+  const [activeHeadings, setActiveHeadings] = useState<Map<string, boolean>>(
+    new Map<string, boolean>()
+  );
+
   useEffect(() => {
     const callback: IntersectionObserverCallback = (
       sections: IntersectionObserverEntry[]
     ) => {
-      setActiveHeadings(
-        sections
-          .filter((section) => section.intersectionRatio > 0)
-          .map((section) => section.target.children[0].getAttribute('id'))
-      );
+      setActiveHeadings((previousActiveHeadings) => {
+        return sections.reduce((map, section) => {
+          map.set(
+            section.target.children[0].getAttribute('id'),
+            section.isIntersecting
+          );
+          return map;
+        }, previousActiveHeadings);
+      });
     };
 
     const observer = new IntersectionObserver(callback);
 
-    const headingElements = Array.from(
-      document.querySelectorAll('article.content section')
-    );
+    const headingElements = Array.from(document.querySelectorAll(query));
 
     // Have the observer watch each `<section/>` that has a heading in it
     headingElements.forEach((element) => {
@@ -27,14 +34,15 @@ const useIntersectionObserver = (setActiveHeadings: StateUpdater<string[]>) => {
     });
 
     return () => observer.disconnect();
-  }, [setActiveHeadings]);
+  }, [activeHeadings, setActiveHeadings, query]);
+
+  return activeHeadings;
 };
 
 const TableOfContents: FunctionalComponent<{ headers: any[] }> = ({
   headers = [],
 }) => {
-  const [activeHeadings, setActiveHeadings] = useState<string[]>([]);
-  useIntersectionObserver(setActiveHeadings);
+  const activeHeadings = useIntersectionObserver('article.content section');
 
   return (
     <>
@@ -42,23 +50,25 @@ const TableOfContents: FunctionalComponent<{ headers: any[] }> = ({
       <ul>
         <li
           class={`header-link depth-2 ${
-            activeHeadings.includes('overview') ? 'active' : ''
+            activeHeadings.get('overview') ? 'active' : ''
           }`.trim()}
         >
           <a href="#overview">Overview</a>
         </li>
         {headers
           .filter(({ depth }) => depth > 1 && depth < 4)
-          .map((header) => (
-            <li
-              key={header.slug}
-              class={`header-link depth-${header.depth} ${
-                activeHeadings.includes(header.slug) ? 'active' : ''
-              }`.trim()}
-            >
-              <a href={`#${header.slug}`}>{header.text}</a>
-            </li>
-          ))}
+          .map((header) => {
+            return (
+              <li
+                key={header.slug}
+                class={`header-link depth-${header.depth} ${
+                  activeHeadings.get(header.slug) ? 'active' : ''
+                }`.trim()}
+              >
+                <a href={`#${header.slug}`}>{header.text}</a>
+              </li>
+            );
+          })}
       </ul>
     </>
   );
