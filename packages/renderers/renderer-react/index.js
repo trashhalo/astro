@@ -2,7 +2,7 @@ export default {
   name: '@astrojs/renderer-react',
   client: './client',
   server: './server',
-  knownEntrypoints: ['react', 'react/jsx-runtime', 'react-dom', 'react-dom/server.js'],
+  knownEntrypoints: ['react', 'react/jsx-runtime', 'react-dom', 'react-dom/server.js', 'react-ssr-prepass'],
   jsxImportSource: 'react',
   jsxTransformOptions: async () => {
     const {

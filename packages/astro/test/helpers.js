@@ -7,7 +7,7 @@ import execa from 'execa';
 import del from 'del';
 
 const MAX_STARTUP_TIME = 20000; // max time startup may take
-const MAX_TEST_TIME = 10000; // max time an individual test may take
+const MAX_TEST_TIME = 100000; // max time an individual test may take
 const MAX_SHUTDOWN_TIME = 3000; // max time shutdown() may take
 
 /** setup fixtures for tests */
